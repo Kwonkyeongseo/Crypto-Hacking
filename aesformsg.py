@@ -12,7 +12,47 @@ class myAES():
         iv = hash.digest()
         self.iv = iv[:16]
 
-    def makeEnabled(self, plaintext):
+    def makeEnabled(self, plaintext): #16바이트 배수가 아닐 경우 16바이트 배수로 만들어줌
         fillersize = 0
         textsize = len(plaintext)
-        
+        if textsize%16 !=0:
+            fillersize = 16-textsize%16
+        filler = '0'*fillersize
+        header = '%d' %(fillersize)
+        gap = 16 - len(header)
+        header += '#'*gap
+
+        return header+plaintext+filler
+
+    def enc(self, plaintext):
+        plaintext = self.makeEnabled(plaintext)
+        aes = AES.new(self.key, AES.MODE_CBC, self.iv)
+        encmsg = aes.encrypt(plaintext.encode())
+        return encmsg
+    
+    def dec(self, ciphertext):
+        aes = AES.new(self.key, AES.MODE_CBC, self.iv)
+        decmsg = aes.decrypt(ciphertext)
+
+        header = decmsg[:16].decode()
+        fillersize = int(header.split('#')[0])  
+
+        if fillersize != 0:
+            decmsg = decmsg[16:-fillersize]
+        else:
+            decmsg = decmsg[16:]
+        return decmsg
+    
+def main():
+    keytext = 'samsjang'
+    ivtext = '1234'
+    msg = 'python3x'
+
+    myCipher = myAES(keytext, ivtext)
+    ciphered =  myCipher.enc(msg)
+    deciphered = myCipher.dec(ciphered)
+    print('ORIGINAL:\t%s' %msg)
+    print('CIPHERED:\t%s' %ciphered)
+    print('DECIPHERED:\t%s' %deciphered)
+
+main()
